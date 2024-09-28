@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Record</title>
+</head>
+<body>
+
+    <!-- Page Heading -->
+    <h1>Attendance Record</h1>
+
+    <!-- Email Input Form -->
+    <form id="attendanceForm">
+        <label for="email">Enter your Email id which is used in Google FORMS:</label>
+        <input type="email" id="email" name="email" required>
+        <button type="submit">Submit Attendance</button>
+    </form>
+
+<script>
+    const form = document.getElementById('attendanceForm');
+
+    // Handle form submission
+    form.addEventListener('submit', function(event) {
+        event.preventDefault(); // Prevent page reload
+        
+        // Get the email entered by the user
+        const email = document.getElementById('email').value;
+
+        // Check if the browser supports geolocation
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition((position) => {
+                // Get latitude and longitude
+                const latitude = position.coords.latitude;
+                const longitude = position.coords.longitude;
+
+                // Validate email first
+                validateEmail(email, latitude, longitude);
+            }, errorCallback);
+        } else {
+            alert("Geolocation is not supported by this browser.");
+        }
+    });
+
+    // Error callback for geolocation
+    function errorCallback(error) {
+        alert("Error getting geolocation: " + error.message);
+    }
+
+    // Validate email by calling the email validation Google Apps Script
+    function validateEmail(email, lat, lng) {
+        const validationUrl = `https://script.google.com/macros/s/AKfycbyqn7Ygdd9kZO8kIOntKAGgtK931HZzka9hRSe13hPlsN6HG62kEBq6gb71s69oAn4D/exec?email=${encodeURIComponent(email)}`;
+        
+        fetch(validationUrl)
+            .then(response => response.json())
+            .then(data => {
+                if (data.isValid) {
+                    // If email is valid, send data to the main Google Apps Script
+                    sendToGoogleSheets(email, lat, lng);
+                } else {
+                    // If email is not valid, show an error message
+                    alert("The email ID provided does not match with the email ID used in GOOGLE FORMS. Please re-enter your email ID.");
+                }
+            })
+            .catch(error => {
+                console.error('Error validating email:', error);
+                alert("An error occurred while validating your email.");
+            });
+    }
+
+    // Send latitude and longitude data to Google Sheets via Google Apps Script
+    function sendToGoogleSheets(email, lat, lng) {
+        const url = 'https://script.google.com/macros/s/AKfycbyt75K8FkdZtv5rwn8cRrSvr64CbUfQEeAsoK_et5JstjDy5MFloMZk8D_U1aNqal82/exec';
+        const data = {
+            email: email,
+            latitude: lat,
+            longitude: lng
+        };
+
+        // Send the POST request
+        fetch(url, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        }).then(() => {
+            // Show a dialog box after success
+            alert("Thank you, you may exit the page.");
+        }).catch(error => {
+            console.error('Error:', error);
+            alert("An error occurred while submitting your data.");
+        });
+    }
+
+</script>
+
+</body>
+</html>
